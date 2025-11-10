@@ -1,5 +1,6 @@
 use std::{
     collections::{HashMap, hash_map::Entry},
+    fmt::Debug,
     net::IpAddr,
     sync::Arc,
     time::Duration,
@@ -21,7 +22,7 @@ pub struct Route {
 }
 
 #[async_trait(?Send)]
-pub trait Router {
+pub trait Router: Debug {
     async fn get_routes(&self) -> Result<Vec<Route>>;
 }
 
@@ -48,7 +49,15 @@ pub async fn refresh_routes(srv: &'static Server) -> Result<()> {
         let mut old_routes = (**srv.routes.read()).clone();
         let mut new_routes = HashMap::<String, Route>::new();
         for r in &routers {
-            for r in r.get_routes().await? {
+            let routes = match r.get_routes().await {
+                Ok(routes) => routes,
+                Err(err) => {
+                    warn!(router = ?r, ?err, "fetch routes");
+                    continue;
+                }
+            };
+
+            for r in routes {
                 match new_routes.entry(r.host.clone()) {
                     Entry::Occupied(e) => {
                         if e.get().upstream != r.upstream {

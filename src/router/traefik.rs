@@ -50,6 +50,8 @@ fn parse_hosts(mut buf: &str) -> Result<Vec<&str>> {
     hosts.complete_err().parse_next(&mut buf).map_err(|e| e.into_inner().unwrap().into_inner())
 }
 
+#[derive(derive_more::Debug)]
+#[debug("TraefikRouter")]
 pub struct TraefikRouter {
     config: TraefikRouterConfig,
     client: reqwest::Client,
